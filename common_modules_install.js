@@ -27,15 +27,34 @@ const ensureDir = dir => {
 
 ensureDir(`${feSource}`);
 
-if (fs.readdirSync(`${feSource}`).length) {
-    child_process.execSync(`cd ${feSource} && git pull`);
-} else {
-    child_process.execSync(`git clone ${gitUrl} ${feSource}`);
-}
+const syncRepo = (function () {
+    let flag = false;
+    return function () {
+        if (flag) return;
+        flag = true;
+        if (fs.readdirSync(`${feSource}`).length) {
+            child_process.execSync(`cd ${feSource} && git pull`);
+        } else {
+            child_process.execSync(`git clone git@code.ops.focus.cn:system/front-end.git ${feSource}`);
+        }
+    };
+})();
+
+const detectSource = s => {
+    if (/^http(s)?:\/\//.test(s)) return 1;
+    return 0;
+};
 
 conf.modules.forEach(mod => {
     let dir = `${ctx}${mod.target}`.split('/');
     dir.pop();
     ensureDir(dir.join('/'));
-    child_process.execSync(`cp -rf ${feSource}/${resDir}/${mod.source} ${ctx}${mod.target}`);
+    
+    let srcType = detectSource(mod.source);
+    if (srcType === 0) {
+        syncRepo();
+        child_process.execSync(`cp -rf ${feSource}/${resDir}/${mod.source} ${ctx}${mod.target}`);
+    } else if (srcType === 1) {
+        child_process.execSync(`curl ${mod.source}?${Date.now()} > ${ctx}${mod.target}`);
+    }
 });
