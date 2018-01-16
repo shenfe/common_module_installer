@@ -8,6 +8,10 @@ module.exports = {
         {
             source: 'some/directory/*',
             target: 'some/directory/'
+        },
+        {
+            source: 'http://some.domain/some/file',
+            target: 'some/file'
         }
     ]
 };
